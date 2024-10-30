@@ -6,7 +6,8 @@ public:
   EnvDHT22();
   static bool setup( uint8_t pin,
                      const char* topic_temp = "/temperature",
-                     const char* topic_hum = "/humidity"
+                     const char* topic_hum = "/humidity",
+                     timer_descriptor &timer_report = micro_rosso::timer_report 
   );
 };
 

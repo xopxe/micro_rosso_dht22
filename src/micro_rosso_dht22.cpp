@@ -206,7 +206,8 @@ static void report_cb(int64_t last_call_time) {
 
 bool EnvDHT22::setup(uint8_t pin,
                      const char* topic_temp,
-                     const char* topic_hum) {
+                     const char* topic_hum,
+                     timer_descriptor &timer_report) {
   D_println("setup: env_dht22");
 
   dht22_pin = pin;
@@ -226,7 +227,7 @@ bool EnvDHT22::setup(uint8_t pin,
   pdescriptor_humidity.topic_name = topic_hum;
   micro_rosso::publishers.push_back(&pdescriptor_humidity);
 
-  micro_rosso::timer_report.callbacks.push_back(&report_cb);
+  timer_report.callbacks.push_back(&report_cb);
 
   return true;
 }
