@@ -1,6 +1,6 @@
 #define NOINTERRUPTS
 #define COOLDOWN_TIME_MS 2000
-//#define DHT_SENSOR_PIN 25  // support pull-up: 2,4,5,12,13,14,15,25,26,27
+// #define DHT_SENSOR_PIN 25  // support pull-up: 2,4,5,12,13,14,15,25,26,27
 
 #include "micro_rosso.h"
 
@@ -15,89 +15,103 @@ static sensor_msgs__msg__RelativeHumidity msg_humidity;
 static publisher_descriptor pdescriptor_temperature;
 static publisher_descriptor pdescriptor_humidity;
 
-static uint8_t dht22_pin; 
+static uint8_t dht22_pin;
 
-#define RCCHECK(fn) \
-  { \
-    rcl_ret_t temp_rc = fn; \
-    if ((temp_rc != RCL_RET_OK)) { return false; } \
+#define RCCHECK(fn)              \
+  {                              \
+    rcl_ret_t temp_rc = fn;      \
+    if ((temp_rc != RCL_RET_OK)) \
+    {                            \
+      return false;              \
+    }                            \
   }
-#define RCNOCHECK(fn) \
-  { \
+#define RCNOCHECK(fn)       \
+  {                         \
     rcl_ret_t temp_rc = fn; \
-    (void)temp_rc; \
+    (void)temp_rc;          \
   }
 
 static unsigned long lastreadtime;
 static uint32_t maxCyclesShort;
 static uint32_t maxCyclesLong;
 
-class DisableInterruptsGuard {
+class DisableInterruptsGuard
+{
 public:
-  DisableInterruptsGuard() {
+  DisableInterruptsGuard()
+  {
     noInterrupts();
   }
 
-  ~DisableInterruptsGuard() {
+  ~DisableInterruptsGuard()
+  {
     interrupts();
   }
 };
 
-EnvDHT22::EnvDHT22() {
-  //lastreadtime = millis();  // to start immediately, substract COOLDOWN_TIME_MS
+EnvDHT22::EnvDHT22()
+{
+  // lastreadtime = millis();  // to start immediately, substract COOLDOWN_TIME_MS
 
-  //maxCycles = microsecondsToClockCycles(1000);
+  // maxCycles = microsecondsToClockCycles(1000);
   maxCyclesShort = microsecondsToClockCycles(50 + 50);
   maxCyclesLong = microsecondsToClockCycles(100 + 50);
 
-  msg_temperature.temperature = -273.15;  //0K
+  msg_temperature.temperature = -273.15; // 0K
   msg_humidity.relative_humidity = 0;
 }
 
-
-float getTemperature(byte data[5]) {
+float getTemperature(byte data[5])
+{
   float f = ((uint16_t)(data[2] & 0x7F)) << 8 | data[3];
   f *= 0.1;
-  if (data[2] & 0x80) {
+  if (data[2] & 0x80)
+  {
     f *= -1;
   }
   return f;
 }
 
-float getHumidity(byte data[5]) {
+float getHumidity(byte data[5])
+{
   float f = ((uint16_t)data[0]) << 8 | data[1];
   f *= 0.1;
   return f;
 }
 
-uint32_t expectPulse(bool level, uint32_t cycles) {
+uint32_t expectPulse(bool level, uint32_t cycles)
+{
   uint32_t count = 0;
-  while (digitalRead(dht22_pin) == level) {
-    if (count++ >= cycles) {
-      return 0;  // Exceeded timeout, fail.
+  while (digitalRead(dht22_pin) == level)
+  {
+    if (count++ >= cycles)
+    {
+      return 0; // Exceeded timeout, fail.
     }
   }
   return count;
 }
 
-bool readData(uint8_t data[5]) {
+bool readData(uint8_t data[5])
+{
   unsigned long currenttime = millis();
-  if ((currenttime - lastreadtime) < COOLDOWN_TIME_MS) {
-    return false;  // cooldown
+  if ((currenttime - lastreadtime) < COOLDOWN_TIME_MS)
+  {
+    return false; // cooldown
   }
   lastreadtime = currenttime;
 
   // Send start signal.
   pinMode(dht22_pin, OUTPUT);
   digitalWrite(dht22_pin, LOW);
-  delayMicroseconds(1100);  // "at least 1ms"
+  delayMicroseconds(1100); // "at least 1ms"
 
   uint32_t cycles[80];
 
   {
     // End the start signal by setting data line high for 40 microseconds.
     digitalWrite(dht22_pin, HIGH);
-    delayMicroseconds(30);  // "20-40us"
+    delayMicroseconds(30); // "20-40us"
 
     // Now start reading the data line to get the value from the DHT sensor.
     pinMode(dht22_pin, INPUT);
@@ -110,12 +124,14 @@ bool readData(uint8_t data[5]) {
 
     // First expect a low signal for ~80 microseconds followed by a high signal
     // for ~80 microseconds again.
-    if (expectPulse(LOW, maxCyclesLong) == 0) {  // 80us
-      //Serial2.print("!1");
+    if (expectPulse(LOW, maxCyclesLong) == 0)
+    { // 80us
+      // Serial2.print("!1");
       return false;
     }
-    if (expectPulse(HIGH, maxCyclesLong) == 0) {  // 80us
-      //Serial2.print("!2");
+    if (expectPulse(HIGH, maxCyclesLong) == 0)
+    { // 80us
+      // Serial2.print("!2");
       return false;
     }
 
@@ -127,17 +143,20 @@ bool readData(uint8_t data[5]) {
     // if the bit is a 0 (high state cycle count < low state cycle count), or a
     // 1 (high state cycle count > low state cycle count). Note that for speed all
     // the pulses are read into a array and then examined in a later step.
-    for (int i = 0; i < 80; i += 2) {
+    for (int i = 0; i < 80; i += 2)
+    {
       uint32_t low_cycles = expectPulse(LOW, maxCyclesShort);
-      if (low_cycles == 0) {
-        //Serial2.print("!3");
+      if (low_cycles == 0)
+      {
+        // Serial2.print("!3");
         return false;
       }
       cycles[i] = low_cycles;
 
       uint32_t high_cycles = expectPulse(HIGH, maxCyclesLong);
-      if (high_cycles == 0) {
-        //Serial2.print("!4");
+      if (high_cycles == 0)
+      {
+        // Serial2.print("!4");
         return false;
       }
       cycles[i + 1] = high_cycles;
@@ -153,15 +172,18 @@ bool readData(uint8_t data[5]) {
   // state cycle count), or 1 (high state cycle count > low state cycle count).
   data[0] = data[1] = data[2] = data[3] = data[4] = 0;
 
-  for (int i = 0; i < 40; ++i) {
+  for (int i = 0; i < 40; ++i)
+  {
     uint32_t low_cycles = cycles[2 * i];
     uint32_t high_cycles = cycles[2 * i + 1];
-    if ((low_cycles == 0) || (high_cycles == 0)) {
+    if ((low_cycles == 0) || (high_cycles == 0))
+    {
       return false;
     }
     data[i / 8] <<= 1;
     // Now compare the low and high cycle times to see if the bit is a 0 or 1.
-    if (high_cycles > low_cycles) {
+    if (high_cycles > low_cycles)
+    {
       // High cycles are greater than 50us low cycle count, must be a 1.
       data[i / 8] |= 1;
     }
@@ -171,44 +193,52 @@ bool readData(uint8_t data[5]) {
   }
 
   // Check we read 40 bits and that the checksum matches.
-  if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF)) {
+  if (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF))
+  {
     return true;
-  } else {
+  }
+  else
+  {
     return false;
   }
 }
 
-static void report_cb(int64_t last_call_time) {
+static void report_cb(int64_t last_call_time)
+{
   byte data[5];
-  if (!readData(data)) {
+  if (!readData(data))
+  {
     return;
   }
   float t = getTemperature(data);
   float h = getHumidity(data);
 
-  if (msg_temperature.temperature != t) {
+  if (msg_temperature.temperature != t)
+  {
     msg_temperature.temperature = t;
     micro_rosso::set_timestamp(msg_temperature.header.stamp);
     RCNOCHECK(rcl_publish(
-      &pdescriptor_temperature.publisher,
-      &msg_temperature,
-      NULL));
+        &pdescriptor_temperature.publisher,
+        &msg_temperature,
+        NULL));
   }
-  if (msg_humidity.relative_humidity != h) {
+  if (msg_humidity.relative_humidity != h)
+  {
     msg_humidity.relative_humidity = h;
     micro_rosso::set_timestamp(msg_humidity.header.stamp);
     RCNOCHECK(rcl_publish(
-      &pdescriptor_humidity.publisher,
-      &msg_humidity,
-      NULL));
+        &pdescriptor_humidity.publisher,
+        &msg_humidity,
+        NULL));
   }
 }
 
 bool EnvDHT22::setup(uint8_t pin,
-                     const char* topic_temp,
-                     const char* topic_hum,
-                     timer_descriptor &timer_report) {
-  D_println("setup: env_dht22");
+                     const char *topic_temp,
+                     const char *topic_hum,
+                     timer_descriptor &timer_report)
+{
+  D_print("setup: env_dht22... ");
 
   dht22_pin = pin;
 
@@ -216,18 +246,19 @@ bool EnvDHT22::setup(uint8_t pin,
   digitalWrite(dht22_pin, HIGH);
 
   pdescriptor_temperature.qos = QOS_DEFAULT;
-  pdescriptor_temperature.type_support = (rosidl_message_type_support_t*)
-    ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Temperature);
+  pdescriptor_temperature.type_support = (rosidl_message_type_support_t *)
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Temperature);
   pdescriptor_temperature.topic_name = topic_temp;
   micro_rosso::publishers.push_back(&pdescriptor_temperature);
 
   pdescriptor_humidity.qos = QOS_DEFAULT;
-  pdescriptor_humidity.type_support = (rosidl_message_type_support_t*)
-    ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, RelativeHumidity);
+  pdescriptor_humidity.type_support = (rosidl_message_type_support_t *)
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, RelativeHumidity);
   pdescriptor_humidity.topic_name = topic_hum;
   micro_rosso::publishers.push_back(&pdescriptor_humidity);
 
   timer_report.callbacks.push_back(&report_cb);
 
+  D_println("done.");
   return true;
 }
