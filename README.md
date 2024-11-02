@@ -39,7 +39,10 @@ The setup method allows passing optional topic names and a different micro_rosso
 
 ## Using the module
 
-The module emits a [sensor_msgs/msg/temperature](https://docs.ros2.org/foxy/api/sensor_msgs/msg/Temperature.html) and a [sensor_msgs/msg/relative_humidity](http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/RelativeHumidity.html) topic.
+The module emits the following topics:
+
+* temperature: [sensor_msgs/msg/temperature](https://docs.ros2.org/foxy/api/sensor_msgs/msg/Temperature.html)
+* humidity [sensor_msgs/msg/relative_humidity](http://docs.ros.org/en/noetic/api/sensor_msgs/html/msg/RelativeHumidity.html) topic.
 
 ## Authors and acknowledgment
 
