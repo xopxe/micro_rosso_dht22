@@ -210,26 +210,33 @@ static void report_cb(int64_t last_call_time)
   {
     return;
   }
-  float t = getTemperature(data);
-  float h = getHumidity(data);
 
-  if (msg_temperature.temperature != t)
+  if (pdescriptor_temperature.topic_name != NULL)
   {
-    msg_temperature.temperature = t;
-    micro_rosso::set_timestamp(msg_temperature.header.stamp);
-    RCNOCHECK(rcl_publish(
-        &pdescriptor_temperature.publisher,
-        &msg_temperature,
-        NULL));
+    float t = getTemperature(data);
+    if (msg_temperature.temperature != t)
+    {
+      msg_temperature.temperature = t;
+      micro_rosso::set_timestamp(msg_temperature.header.stamp);
+      RCNOCHECK(rcl_publish(
+          &pdescriptor_temperature.publisher,
+          &msg_temperature,
+          NULL));
+    }
   }
-  if (msg_humidity.relative_humidity != h)
+
+  if (pdescriptor_humidity.topic_name != NULL)
   {
-    msg_humidity.relative_humidity = h;
-    micro_rosso::set_timestamp(msg_humidity.header.stamp);
-    RCNOCHECK(rcl_publish(
-        &pdescriptor_humidity.publisher,
-        &msg_humidity,
-        NULL));
+    float h = getHumidity(data);
+    if (msg_humidity.relative_humidity != h)
+    {
+      msg_humidity.relative_humidity = h;
+      micro_rosso::set_timestamp(msg_humidity.header.stamp);
+      RCNOCHECK(rcl_publish(
+          &pdescriptor_humidity.publisher,
+          &msg_humidity,
+          NULL));
+    }
   }
 }
 
@@ -245,17 +252,23 @@ bool EnvDHT22::setup(uint8_t pin,
   pinMode(dht22_pin, INPUT);
   digitalWrite(dht22_pin, HIGH);
 
-  pdescriptor_temperature.qos = QOS_DEFAULT;
-  pdescriptor_temperature.type_support = (rosidl_message_type_support_t *)
-      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Temperature);
-  pdescriptor_temperature.topic_name = topic_temp;
-  micro_rosso::publishers.push_back(&pdescriptor_temperature);
-
-  pdescriptor_humidity.qos = QOS_DEFAULT;
-  pdescriptor_humidity.type_support = (rosidl_message_type_support_t *)
-      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, RelativeHumidity);
-  pdescriptor_humidity.topic_name = topic_hum;
-  micro_rosso::publishers.push_back(&pdescriptor_humidity);
+  if (topic_temp != NULL)
+  {
+    pdescriptor_temperature.qos = QOS_DEFAULT;
+    pdescriptor_temperature.type_support = (rosidl_message_type_support_t *)
+        ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Temperature);
+    pdescriptor_temperature.topic_name = topic_temp;
+    micro_rosso::publishers.push_back(&pdescriptor_temperature);
+  }
+  
+  if (topic_hum != NULL)
+  {
+    pdescriptor_humidity.qos = QOS_DEFAULT;
+    pdescriptor_humidity.type_support = (rosidl_message_type_support_t *)
+        ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, RelativeHumidity);
+    pdescriptor_humidity.topic_name = topic_hum;
+    micro_rosso::publishers.push_back(&pdescriptor_humidity);
+  }
 
   timer_report.callbacks.push_back(&report_cb);
 
