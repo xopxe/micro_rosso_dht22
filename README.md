@@ -8,7 +8,7 @@ It provides support for the DTH22 temperature/humidity sensors by publishing ROS
 
 First, import module into in your project's `platformio.ini`:
 
-```
+```ini
 lib_deps =
     ...
     https://github.com/xopxe/micro_rosso_dht22.git
@@ -16,7 +16,7 @@ lib_deps =
 
 Then, in your `main.cpp`:
 
-```
+```cpp
 ...
 #include "micro_rosso_dht22.h"
 static EnvDHT22 env;
@@ -30,11 +30,11 @@ void setup() {
 
 The setup method allows passing optional topic names and a different micro_rosso timer to change the publication rate (by default, it uses the 5Hz timer). It is declared as follows:
 
-```
+```h
   static bool setup(uint8_t pin,
                     const char *topic_temp = "/temperature",
                     const char *topic_hum = "/humidity",
-                    timer_descriptor &timer_report = micro_rosso::timer_report);
+                    timer_descriptor &timer = micro_rosso::timer_report);
 ```
 
 ## Using the module
@@ -51,5 +51,3 @@ jvisca@fing.edu.uy - [Grupo MINA](https://www.fing.edu.uy/inco/grupos/mina/), Fa
 ## License
 
 MIT
-
-

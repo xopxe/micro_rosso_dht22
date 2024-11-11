@@ -8,7 +8,7 @@ public:
   static bool setup(uint8_t pin,
                     const char *topic_temp = "/temperature",
                     const char *topic_hum = "/humidity",
-                    timer_descriptor &timer_report = micro_rosso::timer_report);
+                    timer_descriptor &timer = micro_rosso::timer_report);
 };
 
 #endif // __env_dht22_h
