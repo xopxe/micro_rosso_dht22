@@ -1,6 +1,6 @@
 {
     "name": "micro_rosso_dht22",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "DHT22 module for micro_rosso",
     "keywords": "ros, micro-ros, robot, micro_rosso, dht22",
 
@@ -15,7 +15,7 @@
     ],
 
     "dependencies": {
-      "xopxe/micro_rosso": "^0.2.0"
+      "xopxe/micro_rosso": "*"
     },
     "frameworks": "arduino",
     "platforms": "espressif32"
